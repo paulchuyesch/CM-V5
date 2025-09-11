@@ -1,0 +1,7 @@
+fastapi
+pydantic
+python-dotenv
+supabase
+pandas
+uvicorn
+python-multipart

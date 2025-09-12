@@ -117,26 +117,18 @@ class DatosFormulario(BaseModel):
     tipo_empresa: str
     respuestas: Dict[str, str]
 
-# REEMPLAZA TU FUNCIÓN ANTERIOR CON ESTA:
-
 @app.post("/api/diagnostico")
 async def ejecutar_diagnostico(request: Request):
     try:
-        # Primero, intentamos leer y validar los datos que llegan
         json_data = await request.json()
         datos = DatosFormulario.model_validate(json_data)
-
     except ValidationError as e:
-        # ¡AQUÍ ESTÁ LA TRAMPA! Si la validación falla, entramos aquí.
         print("="*50)
         print("¡ERROR DE VALIDACIÓN DETECTADO! El problema es el siguiente:")
-        # Esta línea imprimirá el error exacto de una forma muy clara
         print(e.json())
         print("="*50)
-        # Devolvemos el error para que el frontend sepa que algo falló
         return JSONResponse(status_code=422, content={"detail": e.errors()})
 
-    # Si la validación fue exitosa, el resto del código se ejecuta normal
     datos_dict = datos.model_dump()
     resultado = calcular_multa_sunafil(datos_dict)
 
@@ -159,5 +151,6 @@ async def ejecutar_diagnostico(request: Request):
             raise Exception(api_response.error.message)
     except Exception as e:
         print(f"Error al guardar en Supabase: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "message": f"Error del servidor: {e}"})
 
     return {"status": "success", "message": "Diagnóstico recibido y procesado."}

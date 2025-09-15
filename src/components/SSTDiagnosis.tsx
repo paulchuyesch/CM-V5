@@ -67,7 +67,7 @@ export const SSTDiagnosis: React.FC = () => {
     console.log("Enviando este payload al backend:", payload);
 
     try {
-      const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/diagnostico`;
+      const apiUrl = `https://calculadora.supportbrigades.com/api/diagnostico`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {

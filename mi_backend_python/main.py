@@ -1,14 +1,22 @@
 # main.py
-from fastapi import Request
-from fastapi.responses import JSONResponse
-from pydantic import ValidationError
+import logging
 import os
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
 from typing import Dict
-from supabase import create_client, Client
+
 import pandas as pd
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, ValidationError
+from supabase import Client, create_client
+
+# --- CONFIGURACIÓN DEL LOGGING ---
+# Esto configurará el logger para que los mensajes se muestren en la salida
+# estándar, que es lo que servicios como Passenger leen para sus archivos de log.
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 # --- INICIALIZA EL CLIENTE DE SUPABASE ---
 url: str = os.environ.get("SUPABASE_URL")
@@ -94,7 +102,7 @@ def calcular_multa_sunafil(datos_formulario):
 app = FastAPI()
 
 # Permitir la comunicación con tu app de React (CORS)
-origins = [ "http://localhost:8080", "http://localhost:8081", "http://localhost:5173" ]
+origins = [ "https://calculadora.supportbrigades.com", "http://localhost:8080", "http://localhost:8081", "http://localhost:5173" ]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -119,10 +127,8 @@ async def ejecutar_diagnostico(request: Request):
         json_data = await request.json()
         datos = DatosFormulario.model_validate(json_data)
     except ValidationError as e:
-        print("="*50)
-        print("¡ERROR DE VALIDACIÓN DETECTADO! El problema es el siguiente:")
-        print(e.json())
-        print("="*50)
+        # Usamos logging para registrar el error de validación
+        logging.error(f"Error de validación de Pydantic: {e.errors()}")
         return JSONResponse(status_code=422, content={"detail": e.errors()})
 
     datos_dict = datos.model_dump()
@@ -144,9 +150,15 @@ async def ejecutar_diagnostico(request: Request):
         }
         api_response = supabase.table('diagnosticos').insert(data_to_insert).execute()
         if api_response.error:
+            # Lanzamos una excepción para que sea capturada y registrada
             raise Exception(api_response.error.message)
+        
+        logging.info(f"Diagnóstico guardado exitosamente para la empresa: {resultado['lead']['empresa']}")
+
     except Exception as e:
-        print(f"Error al guardar en Supabase: {e}")
-        return JSONResponse(status_code=500, content={"status": "error", "message": f"Error del servidor: {e}"})
+        # Usamos logging para registrar el error de Supabase
+        logging.error(f"Error al guardar en Supabase: {e}")
+        # Retornamos un mensaje genérico al usuario para no exponer detalles internos
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Error del servidor al intentar guardar los datos."})
 
     return {"status": "success", "message": "Diagnóstico recibido y procesado."}

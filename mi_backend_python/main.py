@@ -3,16 +3,12 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 import os
-from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import Dict
 from supabase import create_client, Client
 import pandas as pd
 from fastapi.middleware.cors import CORSMiddleware
-
-# Carga las variables de entorno desde el archivo .env
-load_dotenv()
 
 # --- INICIALIZA EL CLIENTE DE SUPABASE ---
 url: str = os.environ.get("SUPABASE_URL")
